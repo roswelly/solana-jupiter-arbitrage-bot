@@ -1,29 +1,66 @@
-# PumpFun Bundler with 20 wallets
-Pump.fun bundler that launches token using pumpfun api and buy in the same block with 20 wallets using jito bundle technique.
-The most important part in here is how to configure LUT(Lookup Table Address) and make a transaction using that address.
+# BonkSwap Bundler SDK
 
-### Current pumpfun contract is upgraded and it has more functions and featres like Pump AMM, so bundlers of current ones don't work if the sdk is not updated. You can contact me for updated version of bundler.
+This project is a BonkSwap bundler that allows you to interact with the BonkSwap protocol on Solana. It provides an SDK for creating pools, adding liquidity, swapping tokens, and more, using the BonkSwap on-chain program.
 
-## Check by video
+## Features
+- Create and manage BonkSwap pools
+- Add liquidity and become a provider
+- Swap tokens using the BonkSwap AMM
+- Withdraw fees and rewards
+- Fully typed TypeScript SDK
 
-https://github.com/user-attachments/assets/f41cf67e-b09f-457a-a7ec-b0fd8092c6a8
+## Usage Example
 
-https://github.com/user-attachments/assets/7a35b5d1-7f53-488f-9f4f-340e2d6980b3
+```typescript
+import { BonkSwapSDK } from "./src";
+import { AnchorProvider } from "@coral-xyz/anchor";
+import { PublicKey, Keypair, Connection } from "@solana/web3.js";
+import { BN } from "bn.js";
 
+const connection = new Connection("https://api.devnet.solana.com");
+const wallet = Keypair.generate(); // Replace with your wallet
+const provider = new AnchorProvider(connection, wallet, {});
 
+const sdk = new BonkSwapSDK(provider);
 
-## Contributing
-We welcome contributions! Please submit a pull request or open an issue to discuss any changes.
+async function main() {
+  const accounts = {
+    state: new PublicKey("STATE_PUBKEY_HERE"),
+    pool: new PublicKey("POOL_PUBKEY_HERE"),
+    tokenX: new PublicKey("TOKEN_X_PUBKEY_HERE"),
+    tokenY: new PublicKey("TOKEN_Y_PUBKEY_HERE"),
+    poolXAccount: new PublicKey("POOL_X_ACCOUNT_PUBKEY_HERE"),
+    poolYAccount: new PublicKey("POOL_Y_ACCOUNT_PUBKEY_HERE"),
+    adminXAccount: new PublicKey("ADMIN_X_ACCOUNT_PUBKEY_HERE"),
+    adminYAccount: new PublicKey("ADMIN_Y_ACCOUNT_PUBKEY_HERE"),
+    admin: wallet.publicKey,
+    projectOwner: new PublicKey("PROJECT_OWNER_PUBKEY_HERE"),
+    programAuthority: new PublicKey("PROGRAM_AUTHORITY_PUBKEY_HERE"),
+    systemProgram: new PublicKey("11111111111111111111111111111111"),
+    tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+    rent: new PublicKey("SysvarRent111111111111111111111111111111111"),
+  };
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+  const args = {
+    lpFee: new BN(100),
+    buybackFee: new BN(50),
+    projectFee: new BN(25),
+    mercantiFee: new BN(25),
+    initialTokenX: new BN(1000000),
+    initialTokenY: new BN(1000000),
+    bump: 255,
+  };
 
-If you want a new feature or if you want to increase number of wallet that bundle buy plz contact me.
+  const tx = await sdk.createPool(accounts, args);
+  console.log("Create pool transaction signature:", tx);
+}
 
-## 👤 Author
+main().catch(console.error);
+```
+## Contact
 
-#### Discord: rabnail_15 in discord
+#### Discord: caterpillardev
 
-#### Twitter: [@Rabnail_SOL](https://twitter.com/Rabnail_SOL)   
+#### Twitter: [@caterpillardev](https://twitter.com/caterpillardev)
 
-#### Telegram: [@Rabnail_SOL](https://t.me/Rabnail_SOL) 
+#### Telegram: [@caterpillardev](https://t.me/caterpillardev) 
