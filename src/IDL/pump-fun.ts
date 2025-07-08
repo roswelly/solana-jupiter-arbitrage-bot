@@ -1,0 +1,1 @@
+export type BonkSwap = /* BonkSwap IDL TypeScript type generated from the provided JSON */;

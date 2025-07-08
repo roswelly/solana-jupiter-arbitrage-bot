@@ -1,0 +1,46 @@
+{
+  "version": "0.1.1",
+  "name": "bonkswap",
+  "instructions": [
+    {"name": "createPool", "accounts": [ {"name": "state", "isMut": false, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswapstatev1"} ]}}, {"name": "pool", "isMut": true, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswappoolv1"}, {"kind": "account", "type": "publicKey", "account": "Mint", "path": "token_x"}, {"kind": "account", "type": "publicKey", "account": "Mint", "path": "token_y"} ]}}, {"name": "tokenX", "isMut": false, "isSigner": false}, {"name": "tokenY", "isMut": false, "isSigner": false}, {"name": "poolXAccount", "isMut": true, "isSigner": true}, {"name": "poolYAccount", "isMut": true, "isSigner": true}, {"name": "adminXAccount", "isMut": true, "isSigner": false}, {"name": "adminYAccount", "isMut": true, "isSigner": false}, {"name": "admin", "isMut": true, "isSigner": true}, {"name": "projectOwner", "isMut": false, "isSigner": false}, {"name": "programAuthority", "isMut": false, "isSigner": false}, {"name": "systemProgram", "isMut": false, "isSigner": false}, {"name": "tokenProgram", "isMut": false, "isSigner": false}, {"name": "rent", "isMut": false, "isSigner": false} ], "args": [ {"name": "lpFee", "type": {"defined": "FixedPoint"}}, {"name": "buybackFee", "type": {"defined": "FixedPoint"}}, {"name": "projectFee", "type": {"defined": "FixedPoint"}}, {"name": "mercantiFee", "type": {"defined": "FixedPoint"}}, {"name": "initialTokenX", "type": {"defined": "Token"}}, {"name": "initialTokenY", "type": {"defined": "Token"}}, {"name": "bump", "type": "u8"} ] },
+    {"name": "createProvider", "accounts": [ {"name": "pool", "isMut": true, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswappoolv1"}, {"kind": "account", "type": "publicKey", "account": "Mint", "path": "token_x"}, {"kind": "account", "type": "publicKey", "account": "Mint", "path": "token_y"} ]}}, {"name": "farm", "isMut": true, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswapfarmv1"}, {"kind": "account", "type": "publicKey", "account": "Pool", "path": "pool"} ]}}, {"name": "provider", "isMut": true, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswapproviderv1"}, {"kind": "account", "type": "publicKey", "account": "Pool", "path": "pool"}, {"kind": "account", "type": "publicKey", "path": "owner"} ]}}, {"name": "tokenX", "isMut": false, "isSigner": false}, {"name": "tokenY", "isMut": false, "isSigner": false}, {"name": "poolXAccount", "isMut": true, "isSigner": false}, {"name": "poolYAccount", "isMut": true, "isSigner": false}, {"name": "ownerXAccount", "isMut": true, "isSigner": false}, {"name": "ownerYAccount", "isMut": true, "isSigner": false}, {"name": "owner", "isMut": true, "isSigner": true}, {"name": "systemProgram", "isMut": false, "isSigner": false}, {"name": "tokenProgram", "isMut": false, "isSigner": false}, {"name": "rent", "isMut": false, "isSigner": false} ], "args": [ {"name": "tokenXAmount", "type": {"defined": "Token"}}, {"name": "tokenYAmount", "type": {"defined": "Token"}}, {"name": "bump", "type": "u8"} ] }
+  ],
+  "accounts": [
+    {"name": "state", "isMut": false, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswapstatev1"} ]}},
+    {"name": "pool", "isMut": true, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswappoolv1"}, {"kind": "account", "type": "publicKey", "account": "Mint", "path": "token_x"}, {"kind": "account", "type": "publicKey", "account": "Mint", "path": "token_y"} ]}},
+    {"name": "farm", "isMut": true, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswapfarmv1"}, {"kind": "account", "type": "publicKey", "account": "Pool", "path": "pool"} ]}},
+    {"name": "provider", "isMut": true, "isSigner": false, "pda": {"seeds": [ {"kind": "const", "type": "string", "value": "bonkswapproviderv1"}, {"kind": "account", "type": "publicKey", "account": "Pool", "path": "pool"}, {"kind": "account", "type": "publicKey", "path": "owner"} ]}},
+    {"name": "tokenX", "isMut": false, "isSigner": false},
+    {"name": "tokenY", "isMut": false, "isSigner": false},
+    {"name": "poolXAccount", "isMut": true, "isSigner": true},
+    {"name": "poolYAccount", "isMut": true, "isSigner": true},
+    {"name": "adminXAccount", "isMut": true, "isSigner": false},
+    {"name": "adminYAccount", "isMut": true, "isSigner": false},
+    {"name": "admin", "isMut": true, "isSigner": true},
+    {"name": "projectOwner", "isMut": false, "isSigner": false},
+    {"name": "programAuthority", "isMut": false, "isSigner": false},
+    {"name": "systemProgram", "isMut": false, "isSigner": false},
+    {"name": "tokenProgram", "isMut": false, "isSigner": false},
+    {"name": "rent", "isMut": false, "isSigner": false}
+  ],
+  "types": [
+    {"name": "FixedPoint", "type": "u64"},
+    {"name": "Token", "type": "u64"}
+  ],
+  "errors": [
+    {"name": "InvalidPoolFee", "code": 6000},
+    {"name": "InvalidProviderFee", "code": 6001},
+    {"name": "InvalidTokenAmount", "code": 6002},
+    {"name": "InvalidPoolState", "code": 6003},
+    {"name": "InvalidProviderState", "code": 6004},
+    {"name": "InvalidFarmState", "code": 6005},
+    {"name": "InvalidProjectOwner", "code": 6006},
+    {"name": "InvalidProgramAuthority", "code": 6007},
+    {"name": "InvalidSystemProgram", "code": 6008},
+    {"name": "InvalidTokenProgram", "code": 6009},
+    {"name": "InvalidRent", "code": 6010}
+  ],
+  "metadata": {
+    "address": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+  }
+} 
