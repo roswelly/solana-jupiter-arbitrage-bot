@@ -1,6 +1,6 @@
-# Bonkfun trading bot | Bonkfun bundler | Bonkfun volume bot | Bonkfun sniper SDK
+# Bonkfun trading bot | Bonkfun bundler | Bonkfun volume bot | Bonkfun sniper bot 
 
-This project is a BonkSwap bundler that allows you to interact with the BonkSwap protocol on Solana. It provides an SDK for creating pools, adding liquidity, swapping tokens, and more, using the BonkSwap on-chain program.
+This project is a BonkSwap bundler that allows you to interact with the letsbonkfun. It provides an SDK for creating pools, adding liquidity, swapping tokens, and more, using the BonkSwap on-chain program.
 
 ## Features
 - Create and manage BonkSwap pools
