@@ -63,4 +63,4 @@ main().catch(console.error);
 
 #### Twitter: [@roswellyyy](https://twitter.com/roswellyy)
 
-#### Telegram: [@caterpillardev](https://t.me/roswellyy) 
+#### Telegram: [@roswellyy](https://t.me/roswellyy) 
