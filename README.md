@@ -59,8 +59,8 @@ main().catch(console.error);
 ```
 ## Contact
 
-#### Discord: caterpillardev
 
-#### Twitter: [@caterpillardev](https://twitter.com/caterpillardev)
 
-#### Telegram: [@caterpillardev](https://t.me/caterpillardev) 
+#### Twitter: [@roswellyyy](https://twitter.com/roswellyy)
+
+#### Telegram: [@caterpillardev](https://t.me/roswellyy) 
