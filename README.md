@@ -58,7 +58,8 @@ async function main() {
 main().catch(console.error);
 ```
 ## Contact
-
+-[twitter](https://x.com/roswellecho)
+-[telegram](https://t.me/roswellecho)
 
 
 #### Twitter: [@roswellyyy](https://twitter.com/roswellyy)
