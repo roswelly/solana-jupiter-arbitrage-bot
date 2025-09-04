@@ -1,0 +1,111 @@
+[rpc_endpoints]
+primary = "https://api.mainnet-beta.solana.com"
+secondary = [
+    "https://solana-api.projectserum.com",
+    "https://rpc.ankr.com/solana"
+]
+timeout_ms = 5000
+retry_attempts = 3
+
+[dex_endpoints.raydium]
+name = "Raydium"
+rpc_url = "https://api.raydium.io/v2/sdk/liquidity/mainnet.json"
+api_url = "https://api.raydium.io"
+enabled = true
+priority = 1
+fee_percentage = 0.25
+
+[dex_endpoints.orca]
+name = "Orca"
+rpc_url = "https://api.mainnet.orca.so/v1/whirlpool/list"
+api_url = "https://api.mainnet.orca.so"
+enabled = true
+priority = 2
+fee_percentage = 0.3
+
+[dex_endpoints.serum]
+name = "Serum"
+rpc_url = "https://serum-api.bonfida.com/pools"
+api_url = "https://serum-api.bonfida.com"
+enabled = true
+priority = 3
+fee_percentage = 0.22
+
+[dex_endpoints.aldrin]
+name = "Aldrin"
+rpc_url = "https://api.aldrin.com/pools"
+api_url = "https://api.aldrin.com"
+enabled = false
+priority = 4
+fee_percentage = 0.3
+
+[dex_endpoints.saber]
+name = "Saber"
+rpc_url = "https://api.saber.so/pools"
+api_url = "https://api.saber.so"
+enabled = false
+priority = 5
+fee_percentage = 0.04
+
+[dex_endpoints.mercurial]
+name = "Mercurial"
+rpc_url = "https://api.mercurial.finance/pools"
+api_url = "https://api.mercurial.finance"
+enabled = false
+priority = 6
+fee_percentage = 0.01
+
+[wallet]
+private_key = ""  # Add your private key here
+public_key = ""   # Add your public key here
+max_sol_balance = 10.0
+min_sol_balance = 0.1
+
+[jito]
+enabled = true
+tip_account = "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"
+bundle_endpoint = "https://mainnet.block-engine.jito.wtf"
+max_tip_lamports = 1000000  # 0.001 SOL
+min_tip_lamports = 100000   # 0.0001 SOL
+
+[jupiter]
+enabled = true
+api_url = "https://quote-api.jup.ag/v6"
+api_key = ""  # Optional: Add your Jupiter API key if you have one
+timeout_ms = 10000
+retry_attempts = 3
+default_slippage_bps = 50  # 0.5%
+max_price_impact_pct = 5.0
+preferred_dexes = ["Raydium", "Orca", "Serum"]
+excluded_dexes = ["Aldrin", "Saber", "Mercurial"]
+use_shared_accounts = true
+dynamic_compute_unit_limit = true
+prioritization_fee_lamports = 100000  # 0.0001 SOL
+
+[risk_settings]
+max_position_size = 1000.0
+max_daily_loss = 100.0
+max_slippage = 1.0
+min_profit_threshold = 0.5
+max_trades_per_hour = 10
+enable_stop_loss = true
+stop_loss_percentage = 5.0
+max_gas_price = 1000000
+min_liquidity = 10000.0
+use_jupiter_for_execution = true
+jupiter_slippage_bps = 50
+max_price_impact_pct = 5.0
+
+[monitoring]
+prometheus_port = 9090
+log_level = "info"
+enable_metrics = true
+metrics_interval_ms = 1000
+
+[trading]
+scan_interval_ms = 1000
+execution_timeout_ms = 30000
+max_concurrent_trades = 3
+enable_auto_trading = false
+min_opportunity_duration_ms = 500
+price_update_threshold = 0.1

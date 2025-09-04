@@ -70,6 +70,9 @@ sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chron
 tokio-tungstenite = "0.21"
 futures-util = "0.3"
 
+# Jupiter Aggregator integration
+jupiter-swap-api = "0.1"
+
 # Encryption and security
 ring = "0.17"
 base64 = "0.21"

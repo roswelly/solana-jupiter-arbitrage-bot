@@ -15,12 +15,14 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 ## 🚀 Features
 
 - **Multi-DEX Arbitrage**: Supports Raydium, Orca, Serum, Aldrin, Saber, and Mercurial
+- **Jupiter Aggregator Integration**: Optimal routing and price discovery across 20+ DEXs
 - **Real-time Price Monitoring**: gRPC streaming for instant price updates
 - **Jito Bundle Integration**: Atomic execution with priority fees
 - **Flash Loan Support**: Capital-efficient arbitrage opportunities
 - **Risk Management**: Built-in stop-loss, take-profit, and position sizing
 - **Performance Monitoring**: Prometheus metrics and real-time analytics
 - **Configurable Strategies**: Customizable arbitrage parameters
+- **Hybrid Execution**: Choose between Jupiter routing or direct DEX execution
 
 ## 🏗️ Architecture
 
@@ -35,6 +37,12 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 │   DEX APIs      │    │   Risk          │    │   Monitoring    │
 │   (Multi-DEX)   │    │   Management    │    │   Service       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │
+         ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐
+│   Jupiter       │    │   Enhanced      │
+│   Aggregator    │    │   Opportunities │
+└─────────────────┘    └─────────────────┘
 ```
 
 ## 📦 Installation
@@ -45,6 +53,7 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 - Solana CLI tools
 - Jito bundle access
 - RPC endpoints for multiple DEXs
+- Jupiter API access (optional, can use public API)
 
 ### Build
 
@@ -58,33 +67,66 @@ cargo build --release
 Create a `config.toml` file:
 
 ```toml
-[rpc]
-mainnet = "https://api.mainnet-beta.solana.com"
-devnet = "https://api.devnet.solana.com"
+[rpc_endpoints]
+primary = "https://api.mainnet-beta.solana.com"
+secondary = ["https://solana-api.projectserum.com", "https://rpc.ankr.com/solana"]
+timeout_ms = 5000
+retry_attempts = 3
 
-[private_key]
-# Your wallet private key (Base58 format)
+[wallet]
+private_key = ""  # Your wallet private key (Base58 format)
+public_key = ""   # Your wallet public key
+max_sol_balance = 10.0
+min_sol_balance = 0.1
 
 [jito]
-endpoint = "https://mainnet.block-engine.jito.wtf"
-bundle_endpoint = "https://mainnet.block-engine.jito.wtf/api/v1/bundles"
+enabled = true
 tip_account = "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"
+bundle_endpoint = "https://mainnet.block-engine.jito.wtf"
+max_tip_lamports = 1000000  # 0.001 SOL
+min_tip_lamports = 100000   # 0.0001 SOL
 
-[arbitrage]
-min_profit_threshold = 0.01  # 1% minimum profit
-max_slippage = 0.005         # 0.5% maximum slippage
-max_position_size = 1000.0   # Maximum position size in SOL
-enabled_dexs = ["raydium", "orca", "serum", "aldrin", "saber", "mercurial"]
+[jupiter]
+enabled = true
+api_url = "https://quote-api.jup.ag/v6"
+api_key = ""  # Optional: Your Jupiter API key
+timeout_ms = 10000
+retry_attempts = 3
+default_slippage_bps = 50  # 0.5%
+max_price_impact_pct = 5.0
+preferred_dexes = ["Raydium", "Orca", "Serum"]
+excluded_dexes = ["Aldrin", "Saber", "Mercurial"]
+use_shared_accounts = true
+dynamic_compute_unit_limit = true
+prioritization_fee_lamports = 100000  # 0.0001 SOL
 
-[risk_management]
-daily_loss_limit = 100.0     # Daily loss limit in SOL
-max_concurrent_positions = 5
-stop_loss_percentage = 0.05  # 5% stop loss
-take_profit_percentage = 0.10 # 10% take profit
+[risk_settings]
+max_position_size = 1000.0
+max_daily_loss = 100.0
+max_slippage = 1.0
+min_profit_threshold = 0.5
+max_trades_per_hour = 10
+enable_stop_loss = true
+stop_loss_percentage = 5.0
+max_gas_price = 1000000
+min_liquidity = 10000.0
+use_jupiter_for_execution = true
+jupiter_slippage_bps = 50
+max_price_impact_pct = 5.0
 
 [monitoring]
 prometheus_port = 9090
 log_level = "info"
+enable_metrics = true
+metrics_interval_ms = 1000
+
+[trading]
+scan_interval_ms = 1000
+execution_timeout_ms = 30000
+max_concurrent_trades = 3
+enable_auto_trading = false
+min_opportunity_duration_ms = 500
+price_update_threshold = 0.1
 ```
 
 ## 🚀 Usage
@@ -98,12 +140,17 @@ log_level = "info"
 ### Advanced Usage
 
 ```bash
-./target/release/solana-arbitrage-bot \
-  --config config.toml \
-  --rpc-url https://api.mainnet-beta.solana.com \
-  --private-key YOUR_PRIVATE_KEY \
-  --min-profit 0.02 \
-  --max-slippage 0.003
+# Start with Jupiter integration
+./target/release/solana-arbitrage-bot start --config config.toml --jito --grpc
+
+# Test Jupiter integration
+./target/release/solana-arbitrage-bot test-jupiter \
+  --input-mint So11111111111111111111111111111111111111112 \
+  --output-mint EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --amount 1000000
+
+# Scan for opportunities with enhanced Jupiter support
+./target/release/solana-arbitrage-bot scan --min-profit 0.5 --max-amount 1000.0
 ```
 
 ## 📊 Monitoring
@@ -117,19 +164,47 @@ The bot provides comprehensive monitoring through:
 
 Access metrics at: `http://localhost:9090/metrics`
 
+## 🌟 Jupiter Integration Benefits
+
+### Enhanced Price Discovery
+- **20+ DEXs**: Access to Raydium, Orca, Serum, Aldrin, Saber, Mercurial, and more
+- **Optimal Routing**: Automatic pathfinding across multiple DEXs for best prices
+- **Real-time Quotes**: Instant price updates with minimal latency
+- **Liquidity Aggregation**: Combined liquidity from all supported DEXs
+
+### Improved Execution
+- **Atomic Swaps**: Single transaction execution across multiple DEXs
+- **Slippage Protection**: Built-in slippage controls and price impact monitoring
+- **Gas Optimization**: Efficient transaction routing to minimize costs
+- **MEV Protection**: Integration with Jito bundles for MEV-resistant execution
+
+### Configuration Options
+- **DEX Selection**: Choose preferred and excluded DEXs
+- **Slippage Control**: Configurable slippage tolerance (default 0.5%)
+- **Price Impact Limits**: Maximum price impact thresholds
+- **Execution Methods**: Choose between Jupiter routing or direct DEX execution
+
 ## 🔧 API Reference
 
 ### Core Functions
 
 ```rust
-// Initialize arbitrage engine
-let engine = ArbitrageEngine::new(config).await?;
+// Initialize arbitrage engine with Jupiter
+let engine = ArbitrageEngine::new(
+    config,
+    dex_monitor,
+    risk_manager,
+    portfolio_manager,
+    jito_client,
+    jupiter_client,  // New Jupiter client
+    monitoring,
+).await?;
 
-// Start arbitrage monitoring
-engine.start_monitoring().await?;
+// Scan for enhanced opportunities
+let opportunities = engine.scan_enhanced_opportunities(0.5, 1000.0).await?;
 
-// Execute arbitrage opportunity
-let result = engine.execute_arbitrage(opportunity).await?;
+// Execute Jupiter swap
+let result = engine.execute_jupiter_swap(&opportunity, amount).await?;
 ```
 
 ### Configuration Options

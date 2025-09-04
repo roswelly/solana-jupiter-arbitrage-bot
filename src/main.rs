@@ -5,6 +5,7 @@ use solana_arbitrage_bot::{
     dex_monitor::DexMonitor,
     grpc_server::ArbitrageGrpcServer,
     jito_client::JitoClient,
+    jupiter_client::JupiterClient,
     risk_manager::RiskManager,
     portfolio_manager::PortfolioManager,
     monitoring::MonitoringService,
@@ -72,6 +73,20 @@ enum Commands {
         #[arg(long)]
         max_slippage: Option<f64>,
     },
+    /// Test Jupiter integration
+    TestJupiter {
+        /// Input token mint
+        #[arg(long)]
+        input_mint: String,
+        
+        /// Output token mint
+        #[arg(long)]
+        output_mint: String,
+        
+        /// Amount to swap
+        #[arg(long, default_value = "1000000")]
+        amount: u64,
+    },
 }
 
 #[tokio::main]
@@ -99,6 +114,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+
+    let jupiter_client = if config.jupiter.enabled {
+        Some(Arc::new(JupiterClient::new(
+            config.jupiter.api_url.clone(),
+            config.jupiter.api_key.clone(),
+        )))
+    } else {
+        None
+    };
     
     let dex_monitor = Arc::new(DexMonitor::new(config.dex_endpoints.clone()));
     let arbitrage_engine = Arc::new(ArbitrageEngine::new(
@@ -107,6 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         risk_manager.clone(),
         portfolio_manager.clone(),
         jito_client.clone(),
+        jupiter_client.clone(),
         monitoring.clone(),
     ));
     
@@ -173,6 +198,41 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(slip) = max_slippage {
                 risk.update_max_slippage(slip);
                 info!("📊 Updated max slippage to {:.2}%", slip);
+            }
+        }
+        Commands::TestJupiter { input_mint, output_mint, amount } => {
+            if let Some(jupiter_client) = jupiter_client {
+                info!("🧪 Testing Jupiter integration: {} -> {} (amount: {})", 
+                      input_mint, output_mint, amount);
+                
+                use crate::jupiter_client::JupiterQuoteRequest;
+                let request = JupiterQuoteRequest {
+                    input_mint: input_mint.clone(),
+                    output_mint: output_mint.clone(),
+                    amount,
+                    slippage_bps: 50, // 0.5%
+                    swap_mode: Some("ExactIn".to_string()),
+                    dexes: None,
+                    exclude_dexes: None,
+                    platform_fee_bps: None,
+                    max_accounts: Some(64),
+                };
+
+                match jupiter_client.get_quote(request).await {
+                    Ok(quote) => {
+                        info!("✅ Jupiter quote received:");
+                        info!("  Input: {} {} tokens", quote.in_amount, input_mint);
+                        info!("  Output: {} {} tokens", quote.out_amount, output_mint);
+                        info!("  Price impact: {:.2}%", quote.price_impact_pct);
+                        info!("  Time taken: {:.2}ms", quote.time_taken);
+                        info!("  Route: {} steps", quote.route_plan.len());
+                    }
+                    Err(e) => {
+                        error!("❌ Jupiter quote failed: {}", e);
+                    }
+                }
+            } else {
+                error!("❌ Jupiter client not available. Enable Jupiter in config.");
             }
         }
     }

@@ -4,8 +4,13 @@ use crate::{
     risk_manager::RiskManager,
     portfolio_manager::PortfolioManager,
     jito_client::JitoClient,
+    jupiter_client::JupiterClient,
     monitoring::MonitoringService,
-    types::{ArbitrageOpportunity, PriceData, TradeRequest, TradeResponse},
+    types::{
+        ArbitrageOpportunity, PriceData, TradeRequest, TradeResponse,
+        EnhancedArbitrageOpportunity, JupiterQuote, SwapRequest, SwapResponse,
+        ExecutionMethod, DexPrice, ArbitrageError
+    },
 };
 use anyhow::Result;
 use std::sync::Arc;
@@ -20,6 +25,7 @@ pub struct ArbitrageEngine {
     risk_manager: Arc<RwLock<RiskManager>>,
     portfolio_manager: Arc<PortfolioManager>,
     jito_client: Option<Arc<JitoClient>>,
+    jupiter_client: Option<Arc<JupiterClient>>,
     monitoring: Arc<MonitoringService>,
     is_running: Arc<RwLock<bool>>,
 }
@@ -31,6 +37,7 @@ impl ArbitrageEngine {
         risk_manager: Arc<RwLock<RiskManager>>,
         portfolio_manager: Arc<PortfolioManager>,
         jito_client: Option<Arc<JitoClient>>,
+        jupiter_client: Option<Arc<JupiterClient>>,
         monitoring: Arc<MonitoringService>,
     ) -> Self {
         Self {
@@ -39,6 +46,7 @@ impl ArbitrageEngine {
             risk_manager,
             portfolio_manager,
             jito_client,
+            jupiter_client,
             monitoring,
             is_running: Arc::new(RwLock::new(false)),
         }
@@ -67,6 +75,113 @@ impl ArbitrageEngine {
         *running = false;
         info!("🛑 Stopping arbitrage engine");
         Ok(())
+    }
+
+    pub async fn scan_enhanced_opportunities(
+        &self,
+        min_profit_percentage: f64,
+        max_amount: f64,
+    ) -> Result<Vec<EnhancedArbitrageOpportunity>> {
+        debug!("🔍 Scanning for enhanced arbitrage opportunities with Jupiter");
+        
+        let mut opportunities = Vec::new();
+        
+        // Get direct DEX prices
+        let dex_prices = self.dex_monitor.get_all_prices().await?;
+        
+        // Group prices by token pair
+        let mut price_groups: std::collections::HashMap<String, Vec<PriceData>> = 
+            std::collections::HashMap::new();
+        
+        for price in dex_prices {
+            price_groups.entry(price.token_pair.clone()).or_default().push(price);
+        }
+
+        // Process each token pair
+        for (token_pair, prices) in price_groups {
+            if prices.len() < 2 {
+                continue;
+            }
+
+            // Extract token mints (simplified - in real implementation, you'd have a mapping)
+            let (input_mint, output_mint) = self.extract_token_mints(&token_pair)?;
+            
+            // Get Jupiter quote if enabled
+            let jupiter_quote = if self.config.jupiter.enabled && self.jupiter_client.is_some() {
+                match self.get_jupiter_quote(&input_mint, &output_mint, max_amount as u64).await {
+                    Ok(quote) => Some(quote),
+                    Err(e) => {
+                        warn!("⚠️ Failed to get Jupiter quote for {}: {}", token_pair, e);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
+            // Convert DEX prices to DexPrice format
+            let direct_dex_prices: Vec<DexPrice> = prices.iter().map(|p| DexPrice {
+                dex_name: p.dex_name.clone(),
+                price: p.price,
+                liquidity: p.liquidity,
+                pool_address: p.pool_address.clone(),
+                price_impact: p.price_impact,
+            }).collect();
+
+            // Find best prices
+            let best_jupiter_price = jupiter_quote.as_ref()
+                .map(|q| (q.out_amount as f64) / (q.in_amount as f64))
+                .unwrap_or(0.0);
+            
+            let best_direct_price = direct_dex_prices.iter()
+                .map(|p| p.price)
+                .fold(0.0, f64::max);
+
+            // Calculate profit opportunities
+            if best_jupiter_price > 0.0 && best_direct_price > 0.0 {
+                let profit_percentage = ((best_jupiter_price - best_direct_price) / best_direct_price) * 100.0;
+                
+                if profit_percentage >= min_profit_percentage {
+                    let estimated_profit = (best_jupiter_price - best_direct_price) * max_amount;
+                    let gas_cost = self.estimate_gas_cost().await?;
+                    
+                    if estimated_profit > gas_cost {
+                        let execution_method = if jupiter_quote.is_some() {
+                            ExecutionMethod::Jupiter
+                        } else {
+                            ExecutionMethod::DirectDex
+                        };
+
+                        let opportunity = EnhancedArbitrageOpportunity {
+                            id: Uuid::new_v4().to_string(),
+                            token_pair: token_pair.clone(),
+                            input_mint,
+                            output_mint,
+                            jupiter_quote,
+                            direct_dex_prices,
+                            best_jupiter_price,
+                            best_direct_price,
+                            profit_percentage,
+                            estimated_profit: estimated_profit - gas_cost,
+                            max_amount,
+                            gas_cost,
+                            timestamp: Utc::now().timestamp_millis(),
+                            slippage: self.config.jupiter.default_slippage_bps as f64 / 100.0,
+                            is_profitable: true,
+                            execution_method,
+                        };
+
+                        opportunities.push(opportunity);
+                    }
+                }
+            }
+        }
+
+        // Sort by profit percentage
+        opportunities.sort_by(|a, b| b.profit_percentage.partial_cmp(&a.profit_percentage).unwrap());
+
+        info!("✅ Found {} enhanced arbitrage opportunities", opportunities.len());
+        Ok(opportunities)
     }
 
     pub async fn scan_opportunities(
@@ -303,6 +418,83 @@ impl ArbitrageEngine {
         })
     }
 
+    async fn get_jupiter_quote(
+        &self,
+        input_mint: &str,
+        output_mint: &str,
+        amount: u64,
+    ) -> Result<JupiterQuote> {
+        if let Some(jupiter_client) = &self.jupiter_client {
+            use crate::jupiter_client::JupiterQuoteRequest;
+            
+            let request = JupiterQuoteRequest {
+                input_mint: input_mint.to_string(),
+                output_mint: output_mint.to_string(),
+                amount,
+                slippage_bps: self.config.jupiter.default_slippage_bps,
+                swap_mode: Some("ExactIn".to_string()),
+                dexes: Some(self.config.jupiter.preferred_dexes.clone()),
+                exclude_dexes: Some(self.config.jupiter.excluded_dexes.clone()),
+                platform_fee_bps: None,
+                max_accounts: Some(64),
+            };
+
+            jupiter_client.get_quote(request).await
+        } else {
+            Err(anyhow::anyhow!("Jupiter client not available"))
+        }
+    }
+
+    fn extract_token_mints(&self, token_pair: &str) -> Result<(String, String)> {
+        // Simplified token mint extraction
+        // In a real implementation, you'd have a mapping from token pairs to mint addresses
+        let parts: Vec<&str> = token_pair.split('/').collect();
+        if parts.len() != 2 {
+            return Err(anyhow::anyhow!("Invalid token pair format: {}", token_pair));
+        }
+
+        // This is a simplified mapping - in reality, you'd have a proper token registry
+        let input_mint = match parts[0] {
+            "SOL" => "So11111111111111111111111111111111111111112".to_string(),
+            "USDC" => "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v".to_string(),
+            "USDT" => "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB".to_string(),
+            _ => return Err(anyhow::anyhow!("Unknown token: {}", parts[0])),
+        };
+
+        let output_mint = match parts[1] {
+            "SOL" => "So11111111111111111111111111111111111111112".to_string(),
+            "USDC" => "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v".to_string(),
+            "USDT" => "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB".to_string(),
+            _ => return Err(anyhow::anyhow!("Unknown token: {}", parts[1])),
+        };
+
+        Ok((input_mint, output_mint))
+    }
+
+    async fn execute_jupiter_swap(
+        &self,
+        opportunity: &EnhancedArbitrageOpportunity,
+        amount: u64,
+    ) -> Result<SwapResponse> {
+        if let Some(jupiter_client) = &self.jupiter_client {
+            let swap_request = SwapRequest {
+                input_mint: opportunity.input_mint.clone(),
+                output_mint: opportunity.output_mint.clone(),
+                amount,
+                user_public_key: self.config.wallet.public_key.clone(),
+                slippage: self.config.jupiter.default_slippage_bps as f64 / 100.0,
+                priority_fee: self.config.jupiter.prioritization_fee_lamports,
+                allowed_dexes: Some(self.config.jupiter.preferred_dexes.clone()),
+                excluded_dexes: Some(self.config.jupiter.excluded_dexes.clone()),
+                use_jupiter: true,
+            };
+
+            jupiter_client.execute_swap(swap_request).await
+        } else {
+            Err(anyhow::anyhow!("Jupiter client not available"))
+        }
+    }
+
     fn clone_for_task(&self) -> Self {
         Self {
             config: self.config.clone(),
@@ -310,6 +502,7 @@ impl ArbitrageEngine {
             risk_manager: self.risk_manager.clone(),
             portfolio_manager: self.portfolio_manager.clone(),
             jito_client: self.jito_client.clone(),
+            jupiter_client: self.jupiter_client.clone(),
             monitoring: self.monitoring.clone(),
             is_running: self.is_running.clone(),
         }

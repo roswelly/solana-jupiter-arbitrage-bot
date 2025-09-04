@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use anyhow::Result;
+use crate::types::JupiterConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -8,6 +9,7 @@ pub struct Config {
     pub dex_endpoints: DexConfig,
     pub wallet: WalletConfig,
     pub jito: JitoConfig,
+    pub jupiter: JupiterConfig,
     pub risk_settings: RiskSettings,
     pub monitoring: MonitoringConfig,
     pub trading: TradingConfig,
@@ -169,6 +171,28 @@ impl Config {
                 bundle_endpoint: "https://mainnet.block-engine.jito.wtf".to_string(),
                 max_tip_lamports: 1_000_000, // 0.001 SOL
                 min_tip_lamports: 100_000,   // 0.0001 SOL
+            },
+            jupiter: JupiterConfig {
+                enabled: true,
+                api_url: "https://quote-api.jup.ag/v6".to_string(),
+                api_key: None,
+                timeout_ms: 10000,
+                retry_attempts: 3,
+                default_slippage_bps: 50, // 0.5%
+                max_price_impact_pct: 5.0,
+                preferred_dexes: vec![
+                    "Raydium".to_string(),
+                    "Orca".to_string(),
+                    "Serum".to_string(),
+                ],
+                excluded_dexes: vec![
+                    "Aldrin".to_string(),
+                    "Saber".to_string(),
+                    "Mercurial".to_string(),
+                ],
+                use_shared_accounts: true,
+                dynamic_compute_unit_limit: true,
+                prioritization_fee_lamports: 100_000, // 0.0001 SOL
             },
             risk_settings: RiskSettings {
                 max_position_size: 1000.0,
