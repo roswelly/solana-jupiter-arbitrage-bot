@@ -1,4 +1,4 @@
-# Solana Arbitrage Bot
+# Solana Jupiter Arbitrage Bot
 
 A high-performance, real-time arbitrage bot for Solana that identifies and executes profitable price differences across multiple DEXs using gRPC, Jito bundles, and advanced MEV strategies.
 
@@ -22,26 +22,81 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 - **Configurable Strategies**: Customizable arbitrage parameters
 - **Hybrid Execution**: Choose between Jupiter routing or direct DEX execution
 
-## Architecture
+## 🏛️ Supported DEXs & Program IDs
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Price Feed    │    │  Arbitrage      │    │   Jito Bundle   │
-│   (gRPC)        │───▶│   Engine        │───▶│   Submission    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   DEX APIs      │    │   Risk          │    │   Monitoring    │
-│   (Multi-DEX)   │    │   Management    │    │   Service       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │
-         ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐
-│   Jupiter       │    │   Enhanced      │
-│   Aggregator    │    │   Opportunities │
-└─────────────────┘    └─────────────────┘
-```
+This bot supports integration with major Solana DEXs. Here are the program IDs and addresses for each supported exchange:
+
+### Primary DEXs
+
+| DEX | Program ID | Description | Status |
+|-----|------------|-------------|---------|
+| **Raydium AMM V4** | `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8` | Automated Market Maker | ✅ Active |
+| **Raydium AMM V3** | `5quBtoiQqxF9Jv6KYKctB59NT3gtJD2Y65kdnB1Uev3h` | Legacy AMM | ✅ Active |
+| **Orca Whirlpool** | `whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc` | Concentrated Liquidity | ✅ Active |
+| **Orca AMM V1** | `9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP` | Legacy AMM | ✅ Active |
+| **Serum DEX V3** | `9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin` | Order Book DEX | ✅ Active |
+
+### Secondary DEXs
+
+| DEX | Program ID | Description | Status |
+|-----|------------|-------------|---------|
+| **Aldrin** | `AMM55ShdkoGRB5jVYPjWJkkeY4QwKDoBQfN9GpU8pY5` | AMM with concentrated liquidity | ✅ Active |
+| **Saber** | `SSwpkEEqUyuG4Qb3n5B39u2KrY3mzd9qat9noGn5E88` | Stable swap AMM | ✅ Active |
+| **Mercurial** | `MERLuDFBMmsHnsBPZw2sDQZHvXFMwp8EdjudcU2HKky` | Stable swap AMM | ✅ Active |
+| **Atrix** | `ATR1xDEX1D1D1D1D1D1D1D1D1D1D1D1D1D1D1D1D1D1` | AMM with concentrated liquidity | ✅ Active |
+| **Crema Finance** | `6MLxLqiXaaSUpkgMnWDTuejNZEz3kE7k2woyHGVFw319` | Concentrated liquidity AMM | ✅ Active |
+| **Lifinity** | `LiFiD1D1D1D1D1D1D1D1D1D1D1D1D1D1D1D1D1D1D1D1` | Concentrated liquidity AMM | ✅ Active |
+| **Meteora** | `Eo7WjKq67rjJQS5xS6p3BywB4Y9EhmDbRcTnY6T6fP` | Dynamic AMM | ✅ Active |
+| **OpenBook** | `srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX` | Order book DEX (Serum fork) | ✅ Active |
+
+### Jupiter Aggregator
+
+| Service | Program ID | Description |
+|---------|------------|-------------|
+| **Jupiter V6** | `JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB` | Main aggregator program |
+| **Jupiter V4** | `JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB` | Legacy aggregator |
+
+### Additional Program IDs
+
+| Program | Address | Description |
+|---------|---------|-------------|
+| **Token Program** | `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` | SPL Token program |
+| **Associated Token Program** | `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL` | Associated token accounts |
+| **System Program** | `11111111111111111111111111111111` | Solana system program |
+| **Rent Program** | `SysvarRent111111111111111111111111111111111` | Rent sysvar |
+| **Clock Program** | `SysvarC1ock11111111111111111111111111111111` | Clock sysvar |
+
+### Pool Addresses (Examples)
+
+| Token Pair | Raydium Pool | Orca Pool | Serum Market |
+|------------|--------------|-----------|--------------|
+| **SOL/USDC** | `58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2` | `HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ` | `9wFFyRfZBsuAha4YcuxcXLKwMxJR43S7fPfQLusDBzvT` |
+| **SOL/USDT** | `7qbRF6YsyGuLUVs6Y1q64bdVrfe4ZcUUz1JRdoVNUJnm` | `Dqk7mHQBx2ZWExmyrR2S8X6UG75CrbbpK2FSBZsNVswF` | `HWHvQhFmJBShNUZZxXb7LbQ3h6uH5bVf7Wq3o9y8Y6nK` |
+| **USDC/USDT** | `77quYg4MGneUdjgXCunt9GgM1utm2ZJtkx7n7nrkpuNA` | `2QdhepnKRTLjjSqPL1PtKNwqrUkoLee5Gqs8bvZhRdMv` | `77quYg4MGneUdjgXCunt9GgM1utm2ZJtkx7n7nrkpuNA` |
+
+### RPC Endpoints
+
+| Provider | Mainnet RPC | Description |
+|----------|-------------|-------------|
+| **Solana Labs** | `https://api.mainnet-beta.solana.com` | Official Solana RPC |
+| **Project Serum** | `https://solana-api.projectserum.com` | Serum RPC endpoint |
+| **Ankr** | `https://rpc.ankr.com/solana` | Ankr RPC service |
+| **QuickNode** | `https://solana-mainnet.quiknode.pro/` | QuickNode RPC |
+| **Alchemy** | `https://solana-mainnet.g.alchemy.com/v2/` | Alchemy RPC |
+
+### API Endpoints
+
+| DEX | API Endpoint | Documentation |
+|-----|--------------|---------------|
+| **Raydium** | `https://api.raydium.io/v2/sdk/liquidity/mainnet.json` | [Raydium Docs](https://docs.raydium.io/) |
+| **Orca** | `https://api.mainnet.orca.so/v1/whirlpool/list` | [Orca Docs](https://docs.orca.so/) |
+| **Serum** | `https://serum-api.bonfida.com/pools` | [Serum Docs](https://docs.projectserum.com/) |
+| **Jupiter** | `https://quote-api.jup.ag/v6` | [Jupiter Docs](https://docs.jup.ag/) |
+| **Aldrin** | `https://api.aldrin.com/pools` | [Aldrin Docs](https://docs.aldrin.com/) |
+| **Saber** | `https://api.saber.so/pools` | [Saber Docs](https://docs.saber.so/) |
+| **Mercurial** | `https://api.mercurial.finance/pools` | [Mercurial Docs](https://docs.mercurial.finance/) |
+
+> **Note**: Program IDs and addresses are subject to change. Always verify the latest addresses from official sources before using in production.
 
 ## Installation
 
