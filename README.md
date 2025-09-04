@@ -4,15 +4,13 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 
 <div align="center">
 
-### 📞 Contact & Support
+### Call Me
 
 [![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/heliusdevlabs)
 
-**💬 Get in touch for support, questions, or collaboration**
-
 </div>
 
-## 🚀 Features
+## Features
 
 - **Multi-DEX Arbitrage**: Supports Raydium, Orca, Serum, Aldrin, Saber, and Mercurial
 - **Jupiter Aggregator Integration**: Optimal routing and price discovery across 20+ DEXs
@@ -24,7 +22,7 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 - **Configurable Strategies**: Customizable arbitrage parameters
 - **Hybrid Execution**: Choose between Jupiter routing or direct DEX execution
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -45,7 +43,7 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 └─────────────────┘    └─────────────────┘
 ```
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -58,7 +56,7 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 ### Build
 
 ```bash
-cd solana-arbitrage-bot
+cd solana-jupiter-arbitrage-bot
 cargo build --release
 ```
 
@@ -81,7 +79,7 @@ min_sol_balance = 0.1
 
 [jito]
 enabled = true
-tip_account = "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"
+tip_account = ""
 bundle_endpoint = "https://mainnet.block-engine.jito.wtf"
 max_tip_lamports = 1000000  # 0.001 SOL
 min_tip_lamports = 100000   # 0.0001 SOL
@@ -129,24 +127,24 @@ min_opportunity_duration_ms = 500
 price_update_threshold = 0.1
 ```
 
-## 🚀 Usage
+## Usage
 
 ### Basic Usage
 
 ```bash
-./target/release/solana-arbitrage-bot --config config.toml
+./target/release/solana-jupiter-arbitrage-bot --config config.toml
 ```
 
 ### Advanced Usage
 
 ```bash
 # Start with Jupiter integration
-./target/release/solana-arbitrage-bot start --config config.toml --jito --grpc
+./target/release/solana-jupiter-arbitrage-bot start --config config.toml --jito --grpc
 
 # Test Jupiter integration
-./target/release/solana-arbitrage-bot test-jupiter \
+./target/release/solana-jupiter-arbitrage-bot test-jupiter \
   --input-mint So11111111111111111111111111111111111111112 \
-  --output-mint EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --output-mint  \
   --amount 1000000
 
 # Scan for opportunities with enhanced Jupiter support
@@ -162,7 +160,7 @@ The bot provides comprehensive monitoring through:
 - **Performance Analytics**: Profit/loss tracking
 - **Health Checks**: System status monitoring
 
-Access metrics at: `http://localhost:9090/metrics`
+Access metrics at: `http://localhost:9000/metrics`
 
 ## 🌟 Jupiter Integration Benefits
 
@@ -184,7 +182,7 @@ Access metrics at: `http://localhost:9090/metrics`
 - **Price Impact Limits**: Maximum price impact thresholds
 - **Execution Methods**: Choose between Jupiter routing or direct DEX execution
 
-## 🔧 API Reference
+## API Reference
 
 ### Core Functions
 
@@ -214,21 +212,21 @@ let result = engine.execute_jupiter_swap(&opportunity, amount).await?;
 - `enabled_dexs`: List of DEXs to monitor
 - `risk_management`: Risk control parameters
 
-## 🛡️ Security
+## Security
 
 - **Private Key Protection**: Secure key handling and storage
 - **Transaction Validation**: Comprehensive transaction verification
 - **Rate Limiting**: Protection against API abuse
 - **Error Handling**: Robust error recovery mechanisms
 
-## 📈 Performance
+## Performance
 
 - **Sub-second Execution**: Optimized for speed
 - **Low Latency**: Direct RPC connections
 - **High Throughput**: Concurrent opportunity processing
 - **Resource Efficient**: Minimal CPU and memory usage
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -236,20 +234,14 @@ let result = engine.execute_jupiter_swap(&opportunity, amount).await?;
 4. Add tests
 5. Submit a pull request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## Support
 
 For issues and questions:
 - Open an issue on GitHub
 - Check the documentation
 - Review the examples
 
-## 🔗 Related Projects
-
-- [Solana Copy Trading Bot](../solana-copy-trading-bot/)
-- [Solana MEV Bot](../solana-mev-bot/)
-- [Solana Sandwich Bot](../solana-sandwich-bot/)
-- [Shared Infrastructure](../shared-infrastructure/)
