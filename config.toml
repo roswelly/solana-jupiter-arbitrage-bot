@@ -72,6 +72,7 @@ min_tip_lamports = 100000   # 0.0001 SOL
 enabled = true
 api_url = "https://quote-api.jup.ag/v6"
 api_key = ""  # Optional: Add your Jupiter API key if you have one
+api_type = "Public"  # Options: Public, Pro, Lite, SelfHosted, Ultra
 timeout_ms = 10000
 retry_attempts = 3
 default_slippage_bps = 50  # 0.5%
@@ -81,6 +82,29 @@ excluded_dexes = ["Aldrin", "Saber", "Mercurial"]
 use_shared_accounts = true
 dynamic_compute_unit_limit = true
 prioritization_fee_lamports = 100000  # 0.0001 SOL
+
+# Jupiter v6 Features
+enable_metis = true
+enable_ultra = false
+enable_health_checks = true
+
+# Integrator fees (optional)
+[jupiter.integrator_fee]
+enabled = false
+fee_bps = 5  # 0.05%
+fee_account = ""  # Your fee account address
+
+# Yellowstone gRPC config (for self-hosted)
+[jupiter.yellowstone_config]
+enabled = false
+grpc_endpoint = ""  # Your Yellowstone gRPC endpoint
+x_token = ""  # Your X token
+
+# Cross-app state sharing
+[jupiter.cross_app_state]
+enabled = false
+sync_interval_ms = 5000
+state_key = "arbitrage_bot_state"
 
 [risk_settings]
 max_position_size = 1000.0

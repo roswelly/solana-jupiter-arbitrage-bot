@@ -87,6 +87,38 @@ enum Commands {
         #[arg(long, default_value = "1000000")]
         amount: u64,
     },
+    /// Test Metis integration
+    TestMetis {
+        /// Input token mint
+        #[arg(long)]
+        input_mint: String,
+        
+        /// Output token mint
+        #[arg(long)]
+        output_mint: String,
+        
+        /// Amount to swap
+        #[arg(long, default_value = "1000000")]
+        amount: u64,
+    },
+    /// Test Ultra API integration
+    TestUltra {
+        /// Input token mint
+        #[arg(long)]
+        input_mint: String,
+        
+        /// Output token mint
+        #[arg(long)]
+        output_mint: String,
+        
+        /// Amount to swap
+        #[arg(long, default_value = "1000000")]
+        amount: u64,
+    },
+    /// Check Jupiter API health
+    Health,
+    /// Get Jupiter API information
+    Info,
 }
 
 #[tokio::main]
@@ -229,6 +261,156 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     Err(e) => {
                         error!("❌ Jupiter quote failed: {}", e);
+                    }
+                }
+            } else {
+                error!("❌ Jupiter client not available. Enable Jupiter in config.");
+            }
+        }
+        Commands::TestMetis { input_mint, output_mint, amount } => {
+            if let Some(jupiter_client) = jupiter_client {
+                info!("🔮 Testing Metis integration: {} -> {} (amount: {})", 
+                      input_mint, output_mint, amount);
+                
+                use crate::types::{MetisQuoteRequest, MetisOptimization};
+                let request = MetisQuoteRequest {
+                    input_mint: input_mint.clone(),
+                    output_mint: output_mint.clone(),
+                    amount,
+                    slippage_bps: 50, // 0.5%
+                    swap_mode: Some("ExactIn".to_string()),
+                    dexes: None,
+                    exclude_dexes: None,
+                    platform_fee_bps: None,
+                    max_accounts: Some(64),
+                    metis_optimization: Some(MetisOptimization {
+                        enabled: true,
+                        optimization_level: 3,
+                        max_iterations: 100,
+                        convergence_threshold: 0.001,
+                    }),
+                    cross_app_state: None,
+                };
+
+                match jupiter_client.get_metis_quote(request).await {
+                    Ok(quote) => {
+                        info!("✅ Metis quote received:");
+                        info!("  Input: {} {} tokens", quote.in_amount, input_mint);
+                        info!("  Output: {} {} tokens", quote.out_amount, output_mint);
+                        info!("  Price impact: {:.2}%", quote.price_impact_pct);
+                        info!("  Time taken: {:.2}ms", quote.time_taken);
+                        info!("  Route: {} steps", quote.route_plan.len());
+                        if let Some(opt) = &quote.metis_optimization {
+                            info!("  Metis optimization: level {}, {} iterations", 
+                                  opt.optimization_level, opt.max_iterations);
+                        }
+                    }
+                    Err(e) => {
+                        error!("❌ Metis quote failed: {}", e);
+                    }
+                }
+            } else {
+                error!("❌ Jupiter client not available. Enable Jupiter in config.");
+            }
+        }
+        Commands::TestUltra { input_mint, output_mint, amount } => {
+            if let Some(jupiter_client) = jupiter_client {
+                info!("⚡ Testing Ultra API integration: {} -> {} (amount: {})", 
+                      input_mint, output_mint, amount);
+                
+                use crate::types::{UltraQuoteRequest, UltraFeatures, SlippageProtection};
+                let request = UltraQuoteRequest {
+                    input_mint: input_mint.clone(),
+                    output_mint: output_mint.clone(),
+                    amount,
+                    slippage_bps: 50, // 0.5%
+                    swap_mode: Some("ExactIn".to_string()),
+                    dexes: None,
+                    exclude_dexes: None,
+                    platform_fee_bps: None,
+                    max_accounts: Some(64),
+                    ultra_features: Some(UltraFeatures {
+                        enabled: true,
+                        advanced_routing: true,
+                        mev_protection: true,
+                        gas_optimization: true,
+                        price_impact_optimization: true,
+                    }),
+                    slippage_protection: Some(SlippageProtection {
+                        enabled: true,
+                        max_slippage_bps: 50,
+                        price_impact_threshold: 2.0,
+                        dynamic_slippage: true,
+                    }),
+                };
+
+                match jupiter_client.get_ultra_quote(request).await {
+                    Ok(quote) => {
+                        info!("✅ Ultra quote received:");
+                        info!("  Input: {} {} tokens", quote.in_amount, input_mint);
+                        info!("  Output: {} {} tokens", quote.out_amount, output_mint);
+                        info!("  Price impact: {:.2}%", quote.price_impact_pct);
+                        info!("  Time taken: {:.2}ms", quote.time_taken);
+                        info!("  Route: {} steps", quote.route_plan.len());
+                        if let Some(features) = &quote.ultra_features {
+                            info!("  Ultra features: MEV protection: {}, Gas optimization: {}", 
+                                  features.mev_protection, features.gas_optimization);
+                        }
+                    }
+                    Err(e) => {
+                        error!("❌ Ultra quote failed: {}", e);
+                    }
+                }
+            } else {
+                error!("❌ Jupiter client not available. Enable Jupiter in config.");
+            }
+        }
+        Commands::Health => {
+            if let Some(jupiter_client) = jupiter_client {
+                info!("🏥 Checking Jupiter API health status");
+                
+                match jupiter_client.get_health_status().await {
+                    Ok(health) => {
+                        info!("✅ Jupiter API Health Status:");
+                        info!("  Status: {:?}", health.status);
+                        info!("  Version: {}", health.version);
+                        info!("  Uptime: {} seconds", health.uptime);
+                        if let Some(error) = &health.last_error {
+                            info!("  Last error: {}", error);
+                        }
+                        if let Some(rate_limit) = &health.rate_limit_status {
+                            info!("  Rate limit: {}/{} remaining", rate_limit.remaining, rate_limit.limit);
+                        }
+                    }
+                    Err(e) => {
+                        error!("❌ Health check failed: {}", e);
+                    }
+                }
+            } else {
+                error!("❌ Jupiter client not available. Enable Jupiter in config.");
+            }
+        }
+        Commands::Info => {
+            if let Some(jupiter_client) = jupiter_client {
+                info!("ℹ️ Getting Jupiter API information");
+                
+                match jupiter_client.get_api_info().await {
+                    Ok(info) => {
+                        info!("✅ Jupiter API Information:");
+                        info!("  Version: {}", info.version);
+                        info!("  API Type: {}", info.api_type);
+                        info!("  Supported features: {:?}", info.supported_features);
+                        info!("  Rate limits: {}/min, {}/hour, {}/day", 
+                              info.rate_limits.requests_per_minute,
+                              info.rate_limits.requests_per_hour,
+                              info.rate_limits.requests_per_day);
+                        info!("  Available endpoints: {}", info.endpoints.len());
+                        for endpoint in &info.endpoints {
+                            info!("    {} {} - {} req/min", endpoint.method, endpoint.path, endpoint.rate_limit);
+                        }
+                    }
+                    Err(e) => {
+                        error!("❌ API info request failed: {}", e);
                     }
                 }
             } else {

@@ -176,6 +176,7 @@ impl Config {
                 enabled: true,
                 api_url: "https://quote-api.jup.ag/v6".to_string(),
                 api_key: None,
+                api_type: crate::types::JupiterApiType::Public,
                 timeout_ms: 10000,
                 retry_attempts: 3,
                 default_slippage_bps: 50, // 0.5%
@@ -193,6 +194,24 @@ impl Config {
                 use_shared_accounts: true,
                 dynamic_compute_unit_limit: true,
                 prioritization_fee_lamports: 100_000, // 0.0001 SOL
+                integrator_fee: Some(crate::types::IntegratorFeeConfig {
+                    fee_bps: 5, // 0.05%
+                    fee_account: "".to_string(), // Add your fee account
+                    enabled: false,
+                }),
+                yellowstone_config: Some(crate::types::YellowstoneConfig {
+                    grpc_endpoint: "".to_string(), // Add your Yellowstone endpoint
+                    x_token: "".to_string(), // Add your X token
+                    enabled: false,
+                }),
+                enable_metis: true,
+                enable_ultra: false,
+                enable_health_checks: true,
+                cross_app_state: Some(crate::types::CrossAppStateConfig {
+                    enabled: false,
+                    sync_interval_ms: 5000,
+                    state_key: "arbitrage_bot_state".to_string(),
+                }),
             },
             risk_settings: RiskSettings {
                 max_position_size: 1000.0,

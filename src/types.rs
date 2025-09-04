@@ -247,6 +247,7 @@ pub struct JupiterConfig {
     pub enabled: bool,
     pub api_url: String,
     pub api_key: Option<String>,
+    pub api_type: JupiterApiType,
     pub timeout_ms: u64,
     pub retry_attempts: u32,
     pub default_slippage_bps: u16,
@@ -256,6 +257,226 @@ pub struct JupiterConfig {
     pub use_shared_accounts: bool,
     pub dynamic_compute_unit_limit: bool,
     pub prioritization_fee_lamports: u64,
+    pub integrator_fee: Option<IntegratorFeeConfig>,
+    pub yellowstone_config: Option<YellowstoneConfig>,
+    pub enable_metis: bool,
+    pub enable_ultra: bool,
+    pub enable_health_checks: bool,
+    pub cross_app_state: Option<CrossAppStateConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum JupiterApiType {
+    Public,
+    Pro,
+    Lite,
+    SelfHosted,
+    Ultra,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IntegratorFeeConfig {
+    pub fee_bps: u16,
+    pub fee_account: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct YellowstoneConfig {
+    pub grpc_endpoint: String,
+    pub x_token: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrossAppStateConfig {
+    pub enabled: bool,
+    pub sync_interval_ms: u64,
+    pub state_key: String,
+}
+
+// New v6 data structures
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MetisQuoteRequest {
+    pub input_mint: String,
+    pub output_mint: String,
+    pub amount: u64,
+    pub slippage_bps: u16,
+    pub swap_mode: Option<String>,
+    pub dexes: Option<Vec<String>>,
+    pub exclude_dexes: Option<Vec<String>>,
+    pub platform_fee_bps: Option<u16>,
+    pub max_accounts: Option<u8>,
+    pub metis_optimization: Option<MetisOptimization>,
+    pub cross_app_state: Option<CrossAppState>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MetisOptimization {
+    pub enabled: bool,
+    pub optimization_level: u8, // 1-5
+    pub max_iterations: u32,
+    pub convergence_threshold: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrossAppState {
+    pub app_id: String,
+    pub state_data: serde_json::Value,
+    pub sync_required: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MetisQuote {
+    pub input_mint: String,
+    pub in_amount: u64,
+    pub output_mint: String,
+    pub out_amount: u64,
+    pub price_impact_pct: f64,
+    pub route_plan: Vec<RoutePlan>,
+    pub context_slot: u64,
+    pub time_taken: f64,
+    pub slippage_bps: u16,
+    pub metis_optimization: Option<MetisOptimization>,
+    pub cross_app_state: Option<CrossAppState>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MetisQuoteResponse {
+    pub input_mint: String,
+    pub in_amount: String,
+    pub output_mint: String,
+    pub out_amount: String,
+    pub other_amount_threshold: String,
+    pub swap_mode: String,
+    pub slippage_bps: u16,
+    pub platform_fee: Option<PlatformFee>,
+    pub price_impact_pct: String,
+    pub route_plan: Vec<RoutePlan>,
+    pub context_slot: u64,
+    pub time_taken: f64,
+    pub metis_optimization: Option<MetisOptimization>,
+    pub cross_app_state: Option<CrossAppState>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UltraQuoteRequest {
+    pub input_mint: String,
+    pub output_mint: String,
+    pub amount: u64,
+    pub slippage_bps: u16,
+    pub swap_mode: Option<String>,
+    pub dexes: Option<Vec<String>>,
+    pub exclude_dexes: Option<Vec<String>>,
+    pub platform_fee_bps: Option<u16>,
+    pub max_accounts: Option<u8>,
+    pub ultra_features: Option<UltraFeatures>,
+    pub slippage_protection: Option<SlippageProtection>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UltraFeatures {
+    pub enabled: bool,
+    pub advanced_routing: bool,
+    pub mev_protection: bool,
+    pub gas_optimization: bool,
+    pub price_impact_optimization: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SlippageProtection {
+    pub enabled: bool,
+    pub max_slippage_bps: u16,
+    pub price_impact_threshold: f64,
+    pub dynamic_slippage: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UltraQuote {
+    pub input_mint: String,
+    pub in_amount: u64,
+    pub output_mint: String,
+    pub out_amount: u64,
+    pub price_impact_pct: f64,
+    pub route_plan: Vec<RoutePlan>,
+    pub context_slot: u64,
+    pub time_taken: f64,
+    pub slippage_bps: u16,
+    pub ultra_features: Option<UltraFeatures>,
+    pub slippage_protection: Option<SlippageProtection>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UltraQuoteResponse {
+    pub input_mint: String,
+    pub in_amount: String,
+    pub output_mint: String,
+    pub out_amount: String,
+    pub other_amount_threshold: String,
+    pub swap_mode: String,
+    pub slippage_bps: u16,
+    pub platform_fee: Option<PlatformFee>,
+    pub price_impact_pct: String,
+    pub route_plan: Vec<RoutePlan>,
+    pub context_slot: u64,
+    pub time_taken: f64,
+    pub ultra_features: Option<UltraFeatures>,
+    pub slippage_protection: Option<SlippageProtection>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HealthStatus {
+    pub status: HealthStatusType,
+    pub timestamp: i64,
+    pub version: String,
+    pub uptime: u64,
+    pub last_error: Option<String>,
+    pub rate_limit_status: Option<RateLimitStatus>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum HealthStatusType {
+    Healthy,
+    Degraded,
+    Unhealthy,
+    Maintenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RateLimitStatus {
+    pub remaining: u32,
+    pub reset_time: i64,
+    pub limit: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApiInfo {
+    pub version: String,
+    pub api_type: String,
+    pub supported_features: Vec<String>,
+    pub rate_limits: RateLimitInfo,
+    pub endpoints: Vec<EndpointInfo>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RateLimitInfo {
+    pub requests_per_minute: u32,
+    pub requests_per_hour: u32,
+    pub requests_per_day: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EndpointInfo {
+    pub name: String,
+    pub path: String,
+    pub method: String,
+    pub rate_limit: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlatformFee {
+    pub amount: String,
+    pub fee_bps: u16,
 }
 
 // Error types

@@ -10,6 +10,30 @@ pub struct JupiterClient {
     client: Client,
     base_url: String,
     api_key: Option<String>,
+    api_type: JupiterApiType,
+    integrator_fee: Option<IntegratorFee>,
+    yellowstone_config: Option<YellowstoneConfig>,
+}
+
+#[derive(Debug, Clone)]
+pub enum JupiterApiType {
+    Public,
+    Pro,
+    Lite,
+    SelfHosted,
+    Ultra,
+}
+
+#[derive(Debug, Clone)]
+pub struct IntegratorFee {
+    pub fee_bps: u16,
+    pub fee_account: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct YellowstoneConfig {
+    pub grpc_endpoint: String,
+    pub x_token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -90,14 +114,50 @@ pub struct JupiterSwapResponse {
 
 impl JupiterClient {
     pub fn new(base_url: String, api_key: Option<String>) -> Self {
+        Self::new_with_config(base_url, api_key, JupiterApiType::Public, None, None)
+    }
+
+    pub fn new_with_config(
+        base_url: String,
+        api_key: Option<String>,
+        api_type: JupiterApiType,
+        integrator_fee: Option<IntegratorFee>,
+        yellowstone_config: Option<YellowstoneConfig>,
+    ) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
+        
+        // Add API key if provided
         if let Some(key) = &api_key {
             headers.insert(
                 "Authorization",
                 format!("Bearer {}", key).parse().unwrap(),
             );
         }
+        
+        // Add API type header
+        let api_type_header = match api_type {
+            JupiterApiType::Pro => "pro",
+            JupiterApiType::Lite => "lite",
+            JupiterApiType::SelfHosted => "self-hosted",
+            JupiterApiType::Ultra => "ultra",
+            JupiterApiType::Public => "public",
+        };
+        headers.insert("X-API-Type", api_type_header.parse().unwrap());
+        
+        // Add integrator fee if provided
+        if let Some(fee) = &integrator_fee {
+            headers.insert("X-Integrator-Fee", fee.fee_bps.to_string().parse().unwrap());
+            headers.insert("X-Integrator-Account", fee.fee_account.parse().unwrap());
+        }
+        
+        // Add Yellowstone config if provided
+        if let Some(yellowstone) = &yellowstone_config {
+            headers.insert("X-Yellowstone-Endpoint", yellowstone.grpc_endpoint.parse().unwrap());
+            headers.insert("X-Yellowstone-Token", yellowstone.x_token.parse().unwrap());
+        }
+        
         headers.insert("Content-Type", "application/json".parse().unwrap());
+        headers.insert("User-Agent", "Jupiter-Arbitrage-Bot/1.0".parse().unwrap());
 
         let client = Client::builder()
             .default_headers(headers)
@@ -109,7 +169,58 @@ impl JupiterClient {
             client,
             base_url,
             api_key,
+            api_type,
+            integrator_fee,
+            yellowstone_config,
         }
+    }
+
+    pub fn new_public() -> Self {
+        Self::new("https://quote-api.jup.ag/v6".to_string(), None)
+    }
+
+    pub fn new_pro(api_key: String) -> Self {
+        Self::new_with_config(
+            "https://api.jup.ag/v6".to_string(),
+            Some(api_key),
+            JupiterApiType::Pro,
+            None,
+            None,
+        )
+    }
+
+    pub fn new_lite() -> Self {
+        Self::new_with_config(
+            "https://lite-api.jup.ag/v6".to_string(),
+            None,
+            JupiterApiType::Lite,
+            None,
+            None,
+        )
+    }
+
+    pub fn new_ultra(api_key: String) -> Self {
+        Self::new_with_config(
+            "https://ultra-api.jup.ag/v6".to_string(),
+            Some(api_key),
+            JupiterApiType::Ultra,
+            None,
+            None,
+        )
+    }
+
+    pub fn new_self_hosted(
+        base_url: String,
+        yellowstone_config: YellowstoneConfig,
+        integrator_fee: Option<IntegratorFee>,
+    ) -> Self {
+        Self::new_with_config(
+            base_url,
+            None,
+            JupiterApiType::SelfHosted,
+            integrator_fee,
+            Some(yellowstone_config),
+        )
     }
 
     pub async fn get_quote(&self, request: JupiterQuoteRequest) -> Result<JupiterQuote> {
@@ -123,9 +234,8 @@ impl JupiterClient {
             .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text().await?;
-            error!("❌ Jupiter quote request failed: {}", error_text);
-            return Err(anyhow::anyhow!("Jupiter quote request failed: {}", error_text));
+            let error_response = self.handle_error_response(response).await?;
+            return Err(anyhow::anyhow!("Jupiter quote request failed: {}", error_response));
         }
 
         let quote_response: JupiterQuoteResponse = response.json().await?;
@@ -146,6 +256,60 @@ impl JupiterClient {
                quote.input_mint, quote.output_mint, quote.out_amount);
         
         Ok(quote)
+    }
+
+    async fn handle_error_response(&self, response: reqwest::Response) -> Result<String> {
+        let status = response.status();
+        let headers = response.headers().clone();
+        let body = response.text().await?;
+        
+        // Enhanced error reporting with v6 features
+        let error_details = match status.as_u16() {
+            400 => {
+                format!("Bad Request (400): {}. Check your input parameters.", body)
+            }
+            401 => {
+                format!("Unauthorized (401): {}. Check your API key and permissions.", body)
+            }
+            403 => {
+                format!("Forbidden (403): {}. API access denied or rate limited.", body)
+            }
+            404 => {
+                format!("Not Found (404): {}. Endpoint or resource not found.", body)
+            }
+            429 => {
+                let retry_after = headers.get("retry-after")
+                    .and_then(|h| h.to_str().ok())
+                    .unwrap_or("unknown");
+                format!("Rate Limited (429): {}. Retry after {} seconds.", body, retry_after)
+            }
+            500 => {
+                format!("Internal Server Error (500): {}. Jupiter API server error.", body)
+            }
+            502 => {
+                format!("Bad Gateway (502): {}. Upstream server error.", body)
+            }
+            503 => {
+                format!("Service Unavailable (503): {}. Jupiter API temporarily unavailable.", body)
+            }
+            _ => {
+                format!("HTTP {}: {}", status, body)
+            }
+        };
+
+        // Log additional context for debugging
+        if let Some(api_type) = headers.get("x-api-type") {
+            error!("API Type: {:?}", api_type);
+        }
+        if let Some(request_id) = headers.get("x-request-id") {
+            error!("Request ID: {:?}", request_id);
+        }
+        if let Some(rate_limit) = headers.get("x-rate-limit-remaining") {
+            error!("Rate limit remaining: {:?}", rate_limit);
+        }
+
+        error!("❌ Jupiter API Error: {}", error_details);
+        Ok(error_details)
     }
 
     pub async fn get_swap_transaction(&self, request: JupiterSwapRequest) -> Result<JupiterSwap> {
@@ -208,9 +372,8 @@ impl JupiterClient {
             .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text().await?;
-            error!("❌ Jupiter price request failed: {}", error_text);
-            return Err(anyhow::anyhow!("Jupiter price request failed: {}", error_text));
+            let error_response = self.handle_error_response(response).await?;
+            return Err(anyhow::anyhow!("Jupiter price request failed: {}", error_response));
         }
 
         let prices: HashMap<String, PriceData> = response.json().await?;
@@ -221,6 +384,119 @@ impl JupiterClient {
 
         debug!("✅ Fetched prices for {} tokens", price_map.len());
         Ok(price_map)
+    }
+
+    // New v6 endpoints
+    pub async fn get_metis_quote(&self, request: MetisQuoteRequest) -> Result<MetisQuote> {
+        debug!("🔮 Getting Metis quote for {} -> {}", request.input_mint, request.output_mint);
+        
+        let url = format!("{}/metis/quote", self.base_url);
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_response = self.handle_error_response(response).await?;
+            return Err(anyhow::anyhow!("Metis quote request failed: {}", error_response));
+        }
+
+        let metis_response: MetisQuoteResponse = response.json().await?;
+        
+        let quote = MetisQuote {
+            input_mint: metis_response.input_mint,
+            in_amount: metis_response.in_amount,
+            output_mint: metis_response.output_mint,
+            out_amount: metis_response.out_amount,
+            price_impact_pct: metis_response.price_impact_pct,
+            route_plan: metis_response.route_plan,
+            context_slot: metis_response.context_slot,
+            time_taken: metis_response.time_taken,
+            slippage_bps: metis_response.slippage_bps,
+            metis_optimization: metis_response.metis_optimization,
+            cross_app_state: metis_response.cross_app_state,
+        };
+
+        debug!("✅ Metis quote received: {} -> {} ({} tokens)", 
+               quote.input_mint, quote.output_mint, quote.out_amount);
+        
+        Ok(quote)
+    }
+
+    pub async fn get_ultra_quote(&self, request: UltraQuoteRequest) -> Result<UltraQuote> {
+        debug!("⚡ Getting Ultra quote for {} -> {}", request.input_mint, request.output_mint);
+        
+        let url = format!("{}/ultra/quote", self.base_url);
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_response = self.handle_error_response(response).await?;
+            return Err(anyhow::anyhow!("Ultra quote request failed: {}", error_response));
+        }
+
+        let ultra_response: UltraQuoteResponse = response.json().await?;
+        
+        let quote = UltraQuote {
+            input_mint: ultra_response.input_mint,
+            in_amount: ultra_response.in_amount,
+            output_mint: ultra_response.output_mint,
+            out_amount: ultra_response.out_amount,
+            price_impact_pct: ultra_response.price_impact_pct,
+            route_plan: ultra_response.route_plan,
+            context_slot: ultra_response.context_slot,
+            time_taken: ultra_response.time_taken,
+            slippage_bps: ultra_response.slippage_bps,
+            ultra_features: ultra_response.ultra_features,
+            slippage_protection: ultra_response.slippage_protection,
+        };
+
+        debug!("✅ Ultra quote received: {} -> {} ({} tokens)", 
+               quote.input_mint, quote.output_mint, quote.out_amount);
+        
+        Ok(quote)
+    }
+
+    pub async fn get_health_status(&self) -> Result<HealthStatus> {
+        debug!("🏥 Checking Jupiter API health status");
+        
+        let url = format!("{}/health", self.base_url);
+        let response = self.client
+            .get(&url)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_response = self.handle_error_response(response).await?;
+            return Err(anyhow::anyhow!("Health check failed: {}", error_response));
+        }
+
+        let health: HealthStatus = response.json().await?;
+        debug!("✅ Health status: {:?}", health.status);
+        Ok(health)
+    }
+
+    pub async fn get_api_info(&self) -> Result<ApiInfo> {
+        debug!("ℹ️ Getting Jupiter API information");
+        
+        let url = format!("{}/info", self.base_url);
+        let response = self.client
+            .get(&url)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_response = self.handle_error_response(response).await?;
+            return Err(anyhow::anyhow!("API info request failed: {}", error_response));
+        }
+
+        let info: ApiInfo = response.json().await?;
+        debug!("✅ API info: version {}, type: {:?}", info.version, self.api_type);
+        Ok(info)
     }
 
     pub async fn execute_swap(&self, swap_request: SwapRequest) -> Result<SwapResponse> {

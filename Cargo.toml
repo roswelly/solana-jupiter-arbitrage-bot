@@ -2,10 +2,10 @@
 name = "solana-arbitrage-bot"
 version = "0.1.0"
 edition = "2021"
-authors = ["HeliusDevLabs <contact@heliusdevlabs.com>"]
+authors = ["yabidev <yabidev@gmail.com>"]
 description = "Advanced Solana Arbitrage Bot with gRPC, Jito bundles, and cross-DEX monitoring"
 license = "MIT"
-repository = "https://github.com/heliusdevlabs/solana-arbitrage-bot"
+repository = "https://github.com/roswelly/solana-jupiter-arbitrage-bot"
 
 [dependencies]
 # Async runtime

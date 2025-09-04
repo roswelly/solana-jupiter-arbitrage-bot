@@ -1,12 +1,12 @@
 # Solana Arbitrage Bot
 
-A high-performance, real-time arbitrage bot for Solana that identifies and executes profitable price differences across multiple DEXs using gRPC, Jito bundles, and advanced MEV strategies.
+A high-performance, real-time arbitrage bot for Solana that identifies and executes profitable price differences across multiple DEXs using  Jupiter Aggregator v6, gRPC, Jito bundles, and advanced MEV strategies.
 
 <div align="center">
 
 ### 📞 Contact & Support
 
-[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/heliusdevlabs)
+[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/roswelly)
 
 **💬 Get in touch for support, questions, or collaboration**
 
@@ -58,7 +58,7 @@ A high-performance, real-time arbitrage bot for Solana that identifies and execu
 ### Build
 
 ```bash
-cd solana-arbitrage-bot
+cd solana-jupitere-arbitrage-bot
 cargo build --release
 ```
 
@@ -149,6 +149,24 @@ price_update_threshold = 0.1
   --output-mint EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
   --amount 1000000
 
+# Test Metis integration (v6 feature)
+./target/release/solana-arbitrage-bot test-metis \
+  --input-mint So11111111111111111111111111111111111111112 \
+  --output-mint EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --amount 1000000
+
+# Test Ultra API integration (v6 feature)
+./target/release/solana-arbitrage-bot test-ultra \
+  --input-mint So11111111111111111111111111111111111111112 \
+  --output-mint EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --amount 1000000
+
+# Check Jupiter API health
+./target/release/solana-arbitrage-bot health
+
+# Get Jupiter API information
+./target/release/solana-arbitrage-bot info
+
 # Scan for opportunities with enhanced Jupiter support
 ./target/release/solana-arbitrage-bot scan --min-profit 0.5 --max-amount 1000.0
 ```
@@ -164,25 +182,45 @@ The bot provides comprehensive monitoring through:
 
 Access metrics at: `http://localhost:9090/metrics`
 
-## 🌟 Jupiter Integration Benefits
+## 🌟 Jupiter v6 Integration Benefits
 
 ### Enhanced Price Discovery
 - **20+ DEXs**: Access to Raydium, Orca, Serum, Aldrin, Saber, Mercurial, and more
 - **Optimal Routing**: Automatic pathfinding across multiple DEXs for best prices
 - **Real-time Quotes**: Instant price updates with minimal latency
 - **Liquidity Aggregation**: Combined liquidity from all supported DEXs
+- **Metis Optimization**: Advanced routing algorithms with convergence optimization
+- **Cross-App State Sharing**: Synchronized state across multiple applications
 
 ### Improved Execution
 - **Atomic Swaps**: Single transaction execution across multiple DEXs
 - **Slippage Protection**: Built-in slippage controls and price impact monitoring
 - **Gas Optimization**: Efficient transaction routing to minimize costs
 - **MEV Protection**: Integration with Jito bundles for MEV-resistant execution
+- **Ultra API**: Premium features with advanced routing and MEV protection
+- **Dynamic Slippage**: Adaptive slippage based on market conditions
+
+### API Gateway Options
+- **Public API**: Free tier with basic features
+- **Pro API**: Enhanced features for professional users
+- **Lite API**: Lightweight version for simple integrations
+- **Self-Hosted**: Full control with your own infrastructure
+- **Ultra API**: Premium features with maximum performance
+
+### Advanced Features
+- **Integrator Fees**: Earn fees on successful trades
+- **Yellowstone gRPC**: High-performance data streaming
+- **Health Monitoring**: Real-time API status and performance metrics
+- **Enhanced Error Reporting**: Detailed error information with debugging context
+- **Rate Limit Management**: Intelligent rate limiting and retry logic
 
 ### Configuration Options
 - **DEX Selection**: Choose preferred and excluded DEXs
 - **Slippage Control**: Configurable slippage tolerance (default 0.5%)
 - **Price Impact Limits**: Maximum price impact thresholds
 - **Execution Methods**: Choose between Jupiter routing or direct DEX execution
+- **API Type Selection**: Public, Pro, Lite, Self-Hosted, or Ultra
+- **Feature Toggles**: Enable/disable Metis, Ultra, and health checks
 
 ## 🔧 API Reference
 
@@ -247,9 +285,3 @@ For issues and questions:
 - Check the documentation
 - Review the examples
 
-## 🔗 Related Projects
-
-- [Solana Copy Trading Bot](../solana-copy-trading-bot/)
-- [Solana MEV Bot](../solana-mev-bot/)
-- [Solana Sandwich Bot](../solana-sandwich-bot/)
-- [Shared Infrastructure](../shared-infrastructure/)
