@@ -1,65 +1,180 @@
-# Bonkfun trading bot | Bonkfun bundler | Bonkfun volume bot | Bonkfun sniper bot 
+# Solana Arbitrage Bot
 
-This project is a letsbonkfun bundler, letsbonkfun copy trading, letsbonkfun sniper, letsbonkfun bundler volume bot that allows you to interact with the letsbonkfun. It provides an SDK for creating pools, adding liquidity, swapping tokens, and more, using the BonkSwap on-chain program.
+A high-performance, real-time arbitrage bot for Solana that identifies and executes profitable price differences across multiple DEXs using gRPC, Jito bundles, and advanced MEV strategies.
 
-## Features
-- Create and manage BonkSwap pools
-- Add liquidity and become a provider
-- Swap tokens using the BonkSwap AMM
-- Withdraw fees and rewards
-- Fully typed TypeScript SDK
+<div align="center">
 
-## Usage Example
+### 📞 Contact & Support
 
-```typescript
-import { BonkSwapSDK } from "./src";
-import { AnchorProvider } from "@coral-xyz/anchor";
-import { PublicKey, Keypair, Connection } from "@solana/web3.js";
-import { BN } from "bn.js";
+[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/heliusdevlabs)
 
-const connection = new Connection("https://api.devnet.solana.com");
-const wallet = Keypair.generate(); // Replace with your wallet
-const provider = new AnchorProvider(connection, wallet, {});
+**💬 Get in touch for support, questions, or collaboration**
 
-const sdk = new BonkSwapSDK(provider);
+</div>
 
-async function main() {
-  const accounts = {
-    state: new PublicKey("STATE_PUBKEY_HERE"),
-    pool: new PublicKey("POOL_PUBKEY_HERE"),
-    tokenX: new PublicKey("TOKEN_X_PUBKEY_HERE"),
-    tokenY: new PublicKey("TOKEN_Y_PUBKEY_HERE"),
-    poolXAccount: new PublicKey("POOL_X_ACCOUNT_PUBKEY_HERE"),
-    poolYAccount: new PublicKey("POOL_Y_ACCOUNT_PUBKEY_HERE"),
-    adminXAccount: new PublicKey("ADMIN_X_ACCOUNT_PUBKEY_HERE"),
-    adminYAccount: new PublicKey("ADMIN_Y_ACCOUNT_PUBKEY_HERE"),
-    admin: wallet.publicKey,
-    projectOwner: new PublicKey("PROJECT_OWNER_PUBKEY_HERE"),
-    programAuthority: new PublicKey("PROGRAM_AUTHORITY_PUBKEY_HERE"),
-    systemProgram: new PublicKey("11111111111111111111111111111111"),
-    tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-    rent: new PublicKey("SysvarRent111111111111111111111111111111111"),
-  };
+## 🚀 Features
 
-  const args = {
-    lpFee: new BN(100),
-    buybackFee: new BN(50),
-    projectFee: new BN(25),
-    mercantiFee: new BN(25),
-    initialTokenX: new BN(1000000),
-    initialTokenY: new BN(1000000),
-    bump: 255,
-  };
+- **Multi-DEX Arbitrage**: Supports Raydium, Orca, Serum, Aldrin, Saber, and Mercurial
+- **Real-time Price Monitoring**: gRPC streaming for instant price updates
+- **Jito Bundle Integration**: Atomic execution with priority fees
+- **Flash Loan Support**: Capital-efficient arbitrage opportunities
+- **Risk Management**: Built-in stop-loss, take-profit, and position sizing
+- **Performance Monitoring**: Prometheus metrics and real-time analytics
+- **Configurable Strategies**: Customizable arbitrage parameters
 
-  const tx = await sdk.createPool(accounts, args);
-  console.log("Create pool transaction signature:", tx);
-}
+## 🏗️ Architecture
 
-main().catch(console.error);
 ```
-## Contact
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Price Feed    │    │  Arbitrage      │    │   Jito Bundle   │
+│   (gRPC)        │───▶│   Engine        │───▶│   Submission    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   DEX APIs      │    │   Risk          │    │   Monitoring    │
+│   (Multi-DEX)   │    │   Management    │    │   Service       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
--[twitter](https://x.com/roswellecho)
--[telegram](https://t.me/roswellecho)
+## 📦 Installation
 
+### Prerequisites
 
+- Rust 1.70+
+- Solana CLI tools
+- Jito bundle access
+- RPC endpoints for multiple DEXs
+
+### Build
+
+```bash
+cd solana-arbitrage-bot
+cargo build --release
+```
+
+## ⚙️ Configuration
+
+Create a `config.toml` file:
+
+```toml
+[rpc]
+mainnet = "https://api.mainnet-beta.solana.com"
+devnet = "https://api.devnet.solana.com"
+
+[private_key]
+# Your wallet private key (Base58 format)
+
+[jito]
+endpoint = "https://mainnet.block-engine.jito.wtf"
+bundle_endpoint = "https://mainnet.block-engine.jito.wtf/api/v1/bundles"
+tip_account = "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"
+
+[arbitrage]
+min_profit_threshold = 0.01  # 1% minimum profit
+max_slippage = 0.005         # 0.5% maximum slippage
+max_position_size = 1000.0   # Maximum position size in SOL
+enabled_dexs = ["raydium", "orca", "serum", "aldrin", "saber", "mercurial"]
+
+[risk_management]
+daily_loss_limit = 100.0     # Daily loss limit in SOL
+max_concurrent_positions = 5
+stop_loss_percentage = 0.05  # 5% stop loss
+take_profit_percentage = 0.10 # 10% take profit
+
+[monitoring]
+prometheus_port = 9090
+log_level = "info"
+```
+
+## 🚀 Usage
+
+### Basic Usage
+
+```bash
+./target/release/solana-arbitrage-bot --config config.toml
+```
+
+### Advanced Usage
+
+```bash
+./target/release/solana-arbitrage-bot \
+  --config config.toml \
+  --rpc-url https://api.mainnet-beta.solana.com \
+  --private-key YOUR_PRIVATE_KEY \
+  --min-profit 0.02 \
+  --max-slippage 0.003
+```
+
+## 📊 Monitoring
+
+The bot provides comprehensive monitoring through:
+
+- **Prometheus Metrics**: Real-time performance data
+- **Structured Logging**: Detailed execution logs
+- **Performance Analytics**: Profit/loss tracking
+- **Health Checks**: System status monitoring
+
+Access metrics at: `http://localhost:9090/metrics`
+
+## 🔧 API Reference
+
+### Core Functions
+
+```rust
+// Initialize arbitrage engine
+let engine = ArbitrageEngine::new(config).await?;
+
+// Start arbitrage monitoring
+engine.start_monitoring().await?;
+
+// Execute arbitrage opportunity
+let result = engine.execute_arbitrage(opportunity).await?;
+```
+
+### Configuration Options
+
+- `min_profit_threshold`: Minimum profit percentage to execute
+- `max_slippage`: Maximum acceptable slippage
+- `enabled_dexs`: List of DEXs to monitor
+- `risk_management`: Risk control parameters
+
+## 🛡️ Security
+
+- **Private Key Protection**: Secure key handling and storage
+- **Transaction Validation**: Comprehensive transaction verification
+- **Rate Limiting**: Protection against API abuse
+- **Error Handling**: Robust error recovery mechanisms
+
+## 📈 Performance
+
+- **Sub-second Execution**: Optimized for speed
+- **Low Latency**: Direct RPC connections
+- **High Throughput**: Concurrent opportunity processing
+- **Resource Efficient**: Minimal CPU and memory usage
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For issues and questions:
+- Open an issue on GitHub
+- Check the documentation
+- Review the examples
+
+## 🔗 Related Projects
+
+- [Solana Copy Trading Bot](../solana-copy-trading-bot/)
+- [Solana MEV Bot](../solana-mev-bot/)
+- [Solana Sandwich Bot](../solana-sandwich-bot/)
+- [Shared Infrastructure](../shared-infrastructure/)

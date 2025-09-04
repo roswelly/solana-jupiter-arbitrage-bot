@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package arbitrage;
+
+// Price data from different DEXs
+message PriceData {
+    string dex_name = 1;
+    string token_pair = 2;
+    string base_token = 3;
+    string quote_token = 4;
+    double price = 5;
+    double volume_24h = 6;
+    double liquidity = 7;
+    int64 timestamp = 8;
+    string pool_address = 9;
+    double price_impact = 10;
+}
+
+// Arbitrage opportunity
+message ArbitrageOpportunity {
+    string id = 1;
+    string token_pair = 2;
+    string buy_dex = 3;
+    string sell_dex = 4;
+    double buy_price = 5;
+    double sell_price = 6;
+    double profit_percentage = 7;
+    double estimated_profit = 8;
+    double max_amount = 9;
+    double gas_cost = 10;
+    int64 timestamp = 11;
+    string buy_pool = 12;
+    string sell_pool = 13;
+    double slippage = 14;
+    bool is_profitable = 15;
+}
+
+// Trade execution request
+message TradeRequest {
+    string opportunity_id = 1;
+    double amount = 2;
+    string private_key = 3;
+    double max_slippage = 4;
+    int32 priority_fee = 5;
+    bool use_jito = 6;
+    string jito_tip = 7;
+}
+
+// Trade execution response
+message TradeResponse {
+    string transaction_id = 1;
+    bool success = 2;
+    string error_message = 3;
+    double actual_profit = 4;
+    double gas_used = 5;
+    int64 execution_time = 6;
+    string bundle_id = 7;
+}
+
+// Portfolio information
+message Portfolio {
+    string wallet_address = 1;
+    repeated TokenBalance balances = 2;
+    double total_value_usd = 3;
+    double available_balance = 4;
+    int64 last_updated = 5;
+}
+
+message TokenBalance {
+    string token_mint = 1;
+    string symbol = 2;
+    double amount = 3;
+    double value_usd = 4;
+    double price = 5;
+}
+
+// Risk management settings
+message RiskSettings {
+    double max_position_size = 1;
+    double max_daily_loss = 2;
+    double max_slippage = 3;
+    double min_profit_threshold = 4;
+    int32 max_trades_per_hour = 5;
+    bool enable_stop_loss = 6;
+    double stop_loss_percentage = 7;
+}
+
+// Arbitrage service definition
+service ArbitrageService {
+    // Stream real-time price data from multiple DEXs
+    rpc StreamPrices(PriceStreamRequest) returns (stream PriceData);
+    
+    // Get current arbitrage opportunities
+    rpc GetOpportunities(OpportunityRequest) returns (OpportunityResponse);
+    
+    // Execute arbitrage trade
+    rpc ExecuteTrade(TradeRequest) returns (TradeResponse);
+    
+    // Get portfolio information
+    rpc GetPortfolio(PortfolioRequest) returns (Portfolio);
+    
+    // Update risk management settings
+    rpc UpdateRiskSettings(RiskSettings) returns (RiskSettingsResponse);
+    
+    // Get trading statistics
+    rpc GetStats(StatsRequest) returns (StatsResponse);
+}
+
+message PriceStreamRequest {
+    repeated string dex_names = 1;
+    repeated string token_pairs = 2;
+    int32 update_interval_ms = 3;
+}
+
+message OpportunityRequest {
+    double min_profit_percentage = 1;
+    double min_amount = 2;
+    repeated string token_pairs = 3;
+}
+
+message OpportunityResponse {
+    repeated ArbitrageOpportunity opportunities = 1;
+    int64 total_count = 2;
+}
+
+message PortfolioRequest {
+    string wallet_address = 1;
+}
+
+message RiskSettingsResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message StatsRequest {
+    string time_period = 1; // "1h", "24h", "7d", "30d"
+}
+
+message StatsResponse {
+    double total_profit = 1;
+    int32 total_trades = 2;
+    double win_rate = 3;
+    double avg_profit_per_trade = 4;
+    double max_drawdown = 5;
+    double sharpe_ratio = 6;
+}
